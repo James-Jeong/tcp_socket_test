@@ -74,6 +74,11 @@ server_t* server_init(){
 		return NULL;
 	}
 
+	if( listen( server->fd, MSG_QUEUE_NUM)){
+		printf("	| ! Server : listen error\n");
+		return;
+	}
+
 	printf("	| @ Server : Success to create a object\n");
 	printf("	| @ Server : Welcome\n\n");
 	return server;
@@ -104,16 +109,9 @@ void server_conn( server_t *server){
 		return;
 	}
 
-	if( listen( server->fd, MSG_QUEUE_NUM)){
-		printf("	| ! Server : listen error\n");
-		return;
-	}
-
+	int rv = 0;
 	struct sockaddr_in client_addr;
 	int client_addr_len = sizeof( client_addr);
-	ssize_t recv_bytes;
-	ssize_t send_bytes;
-	
 	memset( &client_addr, 0, client_addr_len);
 
 	int client_fd = accept( server->fd, ( struct sockaddr*)( &client_addr), ( socklen_t*)( &client_addr_len));
@@ -125,48 +123,81 @@ void server_conn( server_t *server){
 	int flag = fcntl( client_fd, F_GETFL, 0);
 	fcntl( client_fd, F_SETFL, flag | O_NONBLOCK);
 
-	char read_buf[ BUF_MAX_LEN];
-	char send_buf[ BUF_MAX_LEN];
+	rv = server_process_data( server, client_fd);
+	if( rv < 0){
+		printf("    | ! Server : process end\n");
+		return ;
+	}
+}
+
+int server_process_data( server_t *server, int fd){
 	int read_rv = 0;
-
-	snprintf( send_buf, BUF_MAX_LEN, "%s", "OK");
-
+	int send_rv = 0;
 	printf("        | @ Server : waiting...\n");
 
 	while(1){
-		memset( read_buf, 0x00, sizeof( read_buf));
-		read_rv = read( client_fd, read_buf, sizeof( read_buf));
-
+		read_rv = server_recv_data( fd);
 		if( read_rv < 0){
-			if( errno == EAGAIN){
-				//printf("        | @ Server : EAGAIN\n");
-			}
-			else{
-				printf("	| ! Server : read error\n");
-				printf("	| ! Server : socket close\n");
-				close( client_fd);
-				break;
-			}
+			close( fd);
+			return read_rv;
 		}
 		else if( read_rv == 0){
-			printf("	| ! Server : socket close\n");
-			close( client_fd);
-			break;
+			send_rv = server_send_data( fd);
+			if( send_rv < 0){
+				close( fd);
+				return send_rv;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int server_recv_data( int fd){
+	char read_buf[ BUF_MAX_LEN];
+	int read_rv = 0;
+	size_t read_buf_size = sizeof( read_buf);
+	memset( read_buf, 0x00, read_buf_size);
+
+	read_rv = read( fd, read_buf, read_buf_size);
+	if( read_rv < 0){
+		if( errno == EAGAIN){
+			//printf("        | @ Server : EAGAIN\n");
+			return 1;
 		}
 		else{
-			printf("        | @ Server : < [ %s ]\n", read_buf);
-
-			if( !memcmp( read_buf, "q", 1)){
-				printf("	| @ Server : Finish\n");
-				break;
-			}
-
-			if( ( send_bytes = write( client_fd, send_buf, sizeof( send_buf), 0)) <= 0){
-				printf("        | ! Server : Fail to send msg\n");
-				printf("        | ! Server : > [ %s ]\n\n", send_buf);
-			}
+			printf("	| ! Server : read error\n");
+			printf("	| ! Server : socket close\n");
+			return -2;
 		}
-
 	}
+	else if( read_rv == 0){
+		printf("	| ! Server : socket close\n");
+		return -1;
+	}
+	else{
+		printf("        | @ Server : < [ %s ]\n", read_buf);
+
+		if( !memcmp( read_buf, "q", 1)){
+			printf("	| @ Server : Finish\n");
+			return -3;
+		}
+	}
+	return 0;
+}
+
+int server_send_data( int fd){
+	ssize_t send_bytes;
+	char send_buf[ BUF_MAX_LEN];
+	size_t send_buf_size = sizeof( send_buf);
+	memset( send_buf, 0, send_buf_size);
+	snprintf( send_buf, BUF_MAX_LEN, "%s", "OK");
+
+	if( ( send_bytes = write( fd, send_buf, send_buf_size, 0)) <= 0){
+		printf("        | ! Server : Fail to send msg\n");
+		printf("        | ! Server : > [ %s ]\n\n", send_buf);
+		return -1;
+	}
+	return 0; 
 }
 
