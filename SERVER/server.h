@@ -23,7 +23,7 @@
 /// @brief client 의 요청에 따른 응답을 처리하기 위한 구조체
 typedef struct server_s server_t;
 struct server_s{
-	/// server udp socket file descriptor
+	/// server tcp socket file descriptor
 	int fd;
 	/// server socket address
 	struct sockaddr_in addr;

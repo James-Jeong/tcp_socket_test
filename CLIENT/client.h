@@ -17,7 +17,7 @@ static const char *server_ip = "127.0.0.1";
 /// @brief server 로 요청을 보내서 응답을 받기위한 구조체
 typedef struct client_s client_t;
 struct client_s{
-	/// client udp socket file descriptor
+	/// client tcp socket file descriptor
 	int fd;
 	/// server socket address
 	struct sockaddr_in server_addr;
