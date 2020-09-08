@@ -21,7 +21,7 @@ int main( int argc, char **argv){
 
 	client_process_data( client);
 
-	client_destroy( client);
+	client_destroy( &client);
 }
 
 
@@ -34,7 +34,11 @@ int main( int argc, char **argv){
  * @return 생성된 server 객체
  */
 client_t* client_init( char* hostname){
+	if(hostname == NULL) return NULL;
+	
 	client_t *client = ( client_t*)( malloc( sizeof( client_t)));
+	if(client == NULL) return NULL;
+	
 	struct hostent* he;
 	if( ( he = gethostbyname( hostname)) == NULL){
 		printf("        | ! Client : Fail to get hostent from hostname\n");
@@ -63,14 +67,18 @@ client_t* client_init( char* hostname){
 }
 
 /**
- * @fn void client_destroy( client_t *client)
+ * @fn void client_destroy( client_t **client)
  * @brief client 객체를 삭제하기 위한 함수
  * @return void
  * @param client 삭제하기 위한 client 객체
  */
-void client_destroy( client_t *client){
-	close( client->fd);
-	free( client);
+void client_destroy( client_t **client){
+	if(client == NULL) return;
+	
+	close( (*client)->fd);
+	free( *client);
+	*client = NULL;
+	
 	printf("        | @ Client : Success to destroy the object\n");
 	printf("        | @ Client : BYE\n\n");
 }
@@ -82,6 +90,8 @@ void client_destroy( client_t *client){
  * @param client 요청을 하기 위한 client 객체
  */
 void client_process_data( client_t *client){
+	if(client == NULL) return;
+	
 	int server_addr_size = 0;
 	char read_buf[ BUF_MAX_LEN];
 	char send_buf[ BUF_MAX_LEN];
