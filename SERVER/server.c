@@ -34,7 +34,7 @@ int main( int argc, char **argv){
 
 	server_conn( server);
 
-	server_destroy( server);
+	server_destroy( &server);
 }
 
 
@@ -48,6 +48,7 @@ int main( int argc, char **argv){
  */
 server_t* server_init(){
 	server_t *server = ( server_t*)malloc( sizeof( server_t));
+	if( server == NULL) return NULL;
 
 	memset( &server->addr, 0, sizeof( struct sockaddr));
 	server->addr.sin_family = AF_INET;
@@ -85,14 +86,18 @@ server_t* server_init(){
 }
 
 /**
- * @fn void server_destroy( server_t *server)
+ * @fn void server_destroy( server_t **server)
  * @brief server 객체를 삭제하기 위한 함수
  * @return void
  * @param server 삭제하기 위한 server 객체
  */
-void server_destroy( server_t *server){
-	close( server->fd);
-	free( server);
+void server_destroy( server_t **server){
+	if( server == NULL) return NULL;
+	
+	close( (*server)->fd);
+	free( *server);
+	*server = NULL;
+	
 	printf("	| @ Server : Success to destroy the object\n");
 	printf("	| @ Server : BYE\n\n");
 }
@@ -104,6 +109,8 @@ void server_destroy( server_t *server){
  * @param server 데이터 처리를 위한 server 객체
  */
 void server_conn( server_t *server){
+	if( server == NULL) return;
+	
 	if( server->fd <= 0){
 		printf("	| ! Server : fd error\n");
 		return;
@@ -131,6 +138,8 @@ void server_conn( server_t *server){
 }
 
 int server_process_data( server_t *server, int fd){
+	if( server == NULL) return -1;
+	
 	int read_rv = 0;
 	int send_rv = 0;
 	printf("        | @ Server : waiting...\n");
@@ -154,6 +163,8 @@ int server_process_data( server_t *server, int fd){
 }
 
 int server_recv_data( int fd){
+	if( fd < 0) return -1;
+	
 	char read_buf[ BUF_MAX_LEN];
 	int read_rv = 0;
 	size_t read_buf_size = sizeof( read_buf);
@@ -187,6 +198,8 @@ int server_recv_data( int fd){
 }
 
 int server_send_data( int fd){
+	if( fd < 0) return -1;
+	
 	ssize_t send_bytes;
 	char send_buf[ BUF_MAX_LEN];
 	size_t send_buf_size = sizeof( send_buf);
