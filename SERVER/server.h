@@ -31,7 +31,7 @@ struct server_s{
 
 
 server_t* server_init();
-void server_destroy( server_t *server);
+void server_destroy( server_t **server);
 void server_conn( server_t *server);
 
 int server_process_data( server_t *server, int fd);
